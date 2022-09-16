@@ -1,14 +1,10 @@
 import numpy as np
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 from torchvision import datasets, transforms
 
-from groupy.gconv.pytorch_gconv.splitgconv2d import P4ConvZ2, P4ConvP4
-from groupy.gconv.pytorch_gconv.pooling import plane_group_spatial_max_pooling
+from Models.LeNet import *
 
 #reproducibility
 import random
@@ -17,7 +13,7 @@ np.random.seed(42)
 random.seed(0)
 
 torch.cuda.manual_seed(0)
-torch.backends.cudnn.deterministic = True  # Note that this Deterministic mode can have a performance impact
+torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
 #CONFIGURATION
@@ -48,32 +44,8 @@ test_loader = torch.utils.data.DataLoader(
     datasets.MNIST('../data', train=False, transform=image_transforms), batch_size=test_batch_size, shuffle=True, **kwargs)
 
 
-class MNIST_NET(nn.Module):
-    def __init__(self):
-        super(MNIST_NET, self).__init__()
-        self.conv1 = P4ConvZ2(1, 10, kernel_size=3)
-        self.conv2 = P4ConvP4(10, 10, kernel_size=3)
-        self.conv3 = P4ConvP4(10, 20, kernel_size=3)
-        self.conv4 = P4ConvP4(20, 20, kernel_size=3)
-        self.fc1 = nn.Linear(4 * 4 * 20 * 4, 50)
-        self.fc2 = nn.Linear(50, 10)
-
-    def forward(self, x):
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
-        x = plane_group_spatial_max_pooling(x, 2, 2)
-        x = F.relu(self.conv3(x))
-        x = F.relu(self.conv4(x))
-        x = plane_group_spatial_max_pooling(x, 2, 2)
-        x = x.view(x.size()[0], -1)
-        x = F.relu(self.fc1(x))
-        x = F.dropout(x, training=self.training)
-        x = self.fc2(x)
-        return F.log_softmax(x)
-
-
 def get_model():
-  model = MNIST_NET()
+  model = P4LeNet()
   return model, optim.SGD(model.parameters(), lr=lr, momentum=momentum)
 
 
@@ -102,6 +74,7 @@ def step(model, loss_func, input, target, opt=None):
     opt.zero_grad()
 
   return loss.item(), len(input)
+
 
 loss_func = F.nll_loss
 model, opt = get_model()
