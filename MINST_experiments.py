@@ -19,7 +19,7 @@ torch.backends.cudnn.benchmark = False
 #CONFIGURATION
 batch_size = 64 #int
 test_batch_size = 1000 #int
-epochs = 15 #int
+epochs = 10 #int
 lr = 0.01 #float
 momentum = 0.5 #float
 cuda = False #boolean
@@ -89,16 +89,54 @@ def test(model, test_dl):
                     correct_pred[target.item()] += 1
                 total_pred[target.item()] += 1
 
+    """for number in correct_pred.keys():
+        print("Class: ", number, "Correct predictions: ", correct_pred[number], "/", total_pred[number])
 
-    print(correct, "/", total)
+    print(correct, "/", total)"""
 
-    return correct_pred, total_pred
+    return correct, total, correct_pred, total_pred
 
-loss_func = F.nll_loss
-model, opt = get_model(P4LeNet)
-fit(epochs, model, loss_func, opt, train_loader, test_loader)
-correct_pred, total_pred = test(model, test_loader)
+import json
+import os
 
-for number in correct_pred.keys():
-    print("Class: ",number, "Correct predictions: ", correct_pred[number], "/",total_pred[number])
+#create (if it doesn't already exists) test folder
+try:
+    os.mkdir("test_results/MINST")
+except OSError as error:
+    print(error)
 
+models = [P4MLeNet]
+for model_to_test in models:
+    temp_model_instance = model_to_test()
+
+    total_params = 0
+    for name, parameter in temp_model_instance.named_parameters():
+        if not parameter.requires_grad: continue
+        params = parameter.numel()
+        total_params += params
+
+    model_name = str(temp_model_instance)
+
+    del temp_model_instance
+
+    loss_func = F.nll_loss
+    model, opt = get_model(model_to_test)
+    #fit(epochs, model, loss_func, opt, train_loader, test_loader)
+    correct_pred, total_pred, class_correct_pred, object_per_class = test(model, test_loader)
+
+    results = {}
+    results["accuracy_pct"] = correct_pred/total_pred * 100.0
+    results["correct_pred"] = correct_pred
+    results["total_pred"] = total_pred
+    results["parameters"] = total_params
+    results["class_correct_pred"] = class_correct_pred
+    results["object_per_class"] = object_per_class
+
+    # Serializing json
+    json_object = json.dumps(results)
+
+    # save #parameters, accuracy on fixed seed, pytorch model
+    with open("test_results/MINST/"+model_name+"-results.json", 'w') as outfile:
+        outfile.write(json_object)
+
+    torch.save(model.state_dict(), "test_results/MINST/"+model_name)
