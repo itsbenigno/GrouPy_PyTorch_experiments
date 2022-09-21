@@ -1,3 +1,4 @@
+#importing dependencies
 import numpy as np
 
 import torch.optim as optim
@@ -19,11 +20,10 @@ torch.backends.cudnn.benchmark = False
 #CONFIGURATION
 batch_size = 64 #int
 test_batch_size = 1000 #int
-epochs = 10 #int
+epochs = 15 #int
 lr = 0.01 #float
 momentum = 0.5 #float
 cuda = False #boolean
-log_interval = 10 #int
 
 #dataset transformation
 dataset_mean = 0.1307
@@ -35,7 +35,7 @@ image_transforms = transforms.Compose(
     ]
 )
 
-kwargs = {'num_workers': 1, 'pin_memory': True} if cuda else {}
+kwargs = {'num_workers': 2, 'pin_memory': True} if cuda else {}
 
 train_loader = torch.utils.data.DataLoader(
     datasets.MNIST('../data', train=True, download=True, transform=image_transforms), batch_size=batch_size, shuffle=True, **kwargs)
@@ -66,12 +66,6 @@ def fit(epochs, model, loss_func, opt, train_dl, valid_dl):
         for input, target in train_dl:
             step(model, loss_func, input, target, opt)
 
-        model.eval()
-        with torch.no_grad():
-            losses, nums = zip(*[step(model, loss_func, input, target) for input, target in valid_dl])
-            #mean error
-            val_loss = np.sum(np.multiply(losses, nums)) / np.sum(nums)
-            print(epoch, val_loss)
 
 def test(model, test_dl):
     correct = 0
@@ -89,11 +83,6 @@ def test(model, test_dl):
                     correct_pred[target.item()] += 1
                 total_pred[target.item()] += 1
 
-    """for number in correct_pred.keys():
-        print("Class: ", number, "Correct predictions: ", correct_pred[number], "/", total_pred[number])
-
-    print(correct, "/", total)"""
-
     return correct, total, correct_pred, total_pred
 
 import json
@@ -105,8 +94,9 @@ try:
 except OSError as error:
     print(error)
 
-models = [P4MLeNet]
+models = [LeNet, P4LeNet, P4MLeNet]
 for model_to_test in models:
+
     temp_model_instance = model_to_test()
 
     total_params = 0
@@ -116,12 +106,13 @@ for model_to_test in models:
         total_params += params
 
     model_name = str(temp_model_instance)
+    print(model_name)
 
     del temp_model_instance
 
     loss_func = F.nll_loss
     model, opt = get_model(model_to_test)
-    #fit(epochs, model, loss_func, opt, train_loader, test_loader)
+    fit(epochs, model, loss_func, opt, train_loader, test_loader)
     correct_pred, total_pred, class_correct_pred, object_per_class = test(model, test_loader)
 
     results = {}

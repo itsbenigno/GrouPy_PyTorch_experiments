@@ -1,17 +1,11 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Jul 24 13:51:47 2020 by Attila Lengyel - attila@lengyel.nl
-"""
-
 from torchvision.models.resnet import ResNet
 
 import torch
 import torch.nn as nn
 
-from sepgroupy.gconv.splitgconv2d import P4MConvZ2, P4MConvP4M
-from sepgroupy.gconv.g_splitgconv2d import gP4MConvP4M
-from sepgroupy.gconv.gc_splitgconv2d import gcP4MConvP4M
+from groupy.gconv.pytorch_gconv.splitgconv2d import P4ConvZ2, P4ConvP4
+from groupy.gconv.pytorch_gconv import P4MConvZ2, P4MConvP4M
+from groupy.gconv.pytorch_gconv.pooling import plane_group_spatial_max_pooling
 
 
 def conv3x3(layer, in_planes, out_planes, stride=1):
