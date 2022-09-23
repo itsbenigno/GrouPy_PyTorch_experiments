@@ -54,24 +54,16 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)))
-        print(out.shape)
         out = self.layer1(out)
-        print(out.shape)
         out = self.layer2(out)
-        print(out.shape)
         out = self.layer3(out)
-        print(out.shape)
         out = F.avg_pool2d(out, out.size()[3])
-        print(out.shape)
         out = out.view(out.size(0), -1)
-        print(out.shape)
         out = self.linear(out)
-        return out
-
+        return out#F.log_softmax(out, dim=1)
 
 def ResNet44():
     return ResNet(BasicBlock, [7, 7, 7])
-
 
 
 
@@ -124,20 +116,13 @@ class P4ResNet(nn.Module):
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)))
-        print(out.shape)
         out = self.layer1(out)
-        print(out.shape)
         out = self.layer2(out)
-        print(out.shape)
         out = self.layer3(out)
-        print(out.shape)
         out = plane_group_spatial_avg_pooling(out, out.size()[4]) #in order to reduce filter to 1x1
-        print(out.shape)
         out = out.view(out.size(0), -1)
-        print(out.shape)
         out = self.linear(out)
-        return out
-
+        return F.log_softmax(out, dim=1)
 
 def P4ResNet44():
     return P4ResNet(P4BasicBlock, [7, 7, 7])
@@ -194,27 +179,13 @@ class P4MResNet(nn.Module):
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)))
-        print(out.shape)
         out = self.layer1(out)
-        print(out.shape)
         out = self.layer2(out)
-        print(out.shape)
         out = self.layer3(out)
-        print(out.shape)
         out = plane_group_spatial_avg_pooling(out, out.size()[4]) #in order to reduce filter to 1x1
-        print(out.shape)
         out = out.view(out.size(0), -1)
-        print(out.shape)
         out = self.linear(out)
-        return out
-
+        return F.log_softmax(out, dim=1)
 
 def P4MResNet44():
     return P4MResNet(P4MBasicBlock, [7, 7, 7])
-
-
-#model = ResNet44()
-#model = P4ResNet44()
-#model = P4MResNet44()
-#input = torch.rand(10,3,224,224)
-#print(model(input).shape)

@@ -77,22 +77,3 @@ class P4MLeNet(nn.Module):
         x = self.fc2(x)
         x = self.fc3(x)
         return F.log_softmax(x, dim=1)
-
-
-
-def count_parameters(models):
-    from prettytable import PrettyTable
-
-    for model in models:
-        print(str(model))
-        table = PrettyTable(["Modules", "Parameters"])
-        total_params = 0
-        for name, parameter in model.named_parameters():
-            if not parameter.requires_grad: continue
-            params = parameter.numel()
-            table.add_row([name, params])
-            total_params += params
-        print(table)
-        print(f"Total Trainable Params: {total_params}")
-
-count_parameters([LeNet(), P4LeNet(), P4MLeNet()])
