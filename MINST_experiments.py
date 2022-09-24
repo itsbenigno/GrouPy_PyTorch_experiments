@@ -20,12 +20,20 @@ torch.manual_seed(42)
 np.random.seed(42)
 random.seed(0)
 
+
+def train_data_mean_std():
+    dataset = datasets.MNIST(root='./data', train=True, download=True)
+    data = dataset.data / 255
+    mean = data.mean() 
+    std = data.std()
+    return mean, std
+
 #retrieve the datasets
-def get_datasets(train_bs, test_bs):
+def get_datasets(train_bs, val_bs, test_bs):
 
     # dataset transformation
-    dataset_mean = 0.1307
-    dataset_std = 0.3081
+    dataset_mean, dataset_std = train_data_mean_std()
+
     image_transforms = transforms.Compose(
         [
             transforms.ToTensor(),
@@ -39,7 +47,7 @@ def get_datasets(train_bs, test_bs):
     test_dataset = datasets.MNIST(root='./data', train=False, transform=image_transforms, download=True)
 
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=train_bs)
-    validation_loader = torch.utils.data.DataLoader(val_set, batch_size=train_bs)
+    validation_loader = torch.utils.data.DataLoader(val_set, batch_size=val_bs)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=test_bs)
 
     return train_loader, validation_loader, test_loader
@@ -48,7 +56,7 @@ def get_datasets(train_bs, test_bs):
 #retrieving the model and initializing the optimizer
 def get_model(model, lr, momentum=None):
   actual_model = model()
-  return actual_model, optim.SGD(actual_model.parameters(), lr=lr, momentum=momentum)
+  return actual_model, optim.Adam(actual_model.parameters(), lr=lr)
 
 
 #compute loss given loss function, model and input
@@ -65,17 +73,27 @@ def step(model, loss_func, input, target, opt=None):
 
 #training of the model
 def fit(epochs, model, loss_func, opt, train_dl, valid_dl, classes, max_patience):
+    path = "test_results/MINST/checkpoint-"+str(model)
     best_accuracy = 0.
     patience = max_patience
 
     for epoch in range(epochs):
+        print("Epoch ", epoch)
         model.train()
         for input, target in train_dl:
             loss = step(model, loss_func, input, target, opt)
+            
+        print("Train loss: ",loss)
+        
+        val_accuracy = 0
+        model.eval()
+        with torch.no_grad():
+            for input, targets in valid_dl:
+                val_accuracy = loss_func(model(input), targets).item()
 
-        val_accuracy = test(model, valid_dl, classes, True)
-        print("Current accuracy", val_accuracy)
-        path = "test_results/MINST/checkpoint-"+str(model)
+        print("Validation loss: ", val_accuracy)
+
+        
         if (val_accuracy > best_accuracy):
             best_accuracy = val_accuracy
             torch.save({
@@ -94,10 +112,14 @@ def fit(epochs, model, loss_func, opt, train_dl, valid_dl, classes, max_patience
                 print("Stopping training and taking the model that performed best in the validation set")
                 return None
 
+    #pick the model with the best val_accuracy
+    checkpoint = torch.load(path)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    opt.load_state_dict(checkpoint['optimizer_state_dict'])
 
 
 
-def test(model, test_dl, classes, validation=False):
+def test(model, test_dl, classes):
     correct = 0
     total = 0
     correct_pred = {pred_class: 0 for pred_class in classes} #class: 0 for class in classes
@@ -109,12 +131,10 @@ def test(model, test_dl, classes, validation=False):
             predictions = torch.max(output, dim=1)[1]
             correct += (predictions == targets).sum().item()
             total += len(input)
-            if validation:
-                return (correct/total)*100 #is it a float?
-            for target, prediction in zip(targets, predictions):
-                if target == prediction:
-                    correct_pred[target.item()] += 1
-                total_pred[target.item()] += 1
+        for target, prediction in zip(targets, predictions):
+            if target == prediction:
+                correct_pred[target.item()] += 1
+            total_pred[target.item()] += 1
 
     return correct, total, correct_pred, total_pred
 
@@ -129,16 +149,16 @@ def create_test_dir(directory_path):
 
 def testing():
     # CONFIGURATION
-    batch_size = 64  # int
-    test_batch_size = 1000  # int
-    epochs = 25  # int
-    lr = 0.01  # float
-    momentum = 0.5  # float
+    train_batch_size = 128  
+    val_batch_size = 10000
+    test_batch_size = 1000 
+    epochs = 25  
+    lr = 0.001 
     classes = [0,1,2,3,4,5,6,7,8,9]
-    max_patience = 5
+    max_patience = 10
 
     create_test_dir("MINST")
-    train_loader, val_loader, test_loader = get_datasets(batch_size, test_batch_size)
+    train_loader, val_loader, test_loader = get_datasets(train_batch_size, val_batch_size, test_batch_size)
     models = [Models.LeNet, Models.P4LeNet, Models.P4MLeNet]
 
     for model_to_test in models:
@@ -151,7 +171,7 @@ def testing():
         del temp_model_instance
 
         loss_func = F.nll_loss
-        model, opt = get_model(model_to_test, lr, momentum)
+        model, opt = get_model(model_to_test, lr)
         fit(epochs, model, loss_func, opt, train_loader, train_loader, classes, max_patience)
         correct_pred, total_pred, class_correct_pred, object_per_class = test(model, test_loader, classes)
 
