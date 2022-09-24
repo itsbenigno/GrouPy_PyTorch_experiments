@@ -32,6 +32,10 @@ class BasicBlock(nn.Module):
 
 
 class ResNet(nn.Module):
+
+    def __str__(self):
+        return "ResNet"
+
     def __init__(self, block, num_blocks, num_classes=10):
         super(ResNet, self).__init__()
         self.in_planes = 16
@@ -94,6 +98,10 @@ class P4BasicBlock(nn.Module):
 
 
 class P4ResNet(nn.Module):
+
+    def __str__(self):
+        return "P4ResNet"
+
     def __init__(self, block, num_blocks, num_classes=10):
         super(P4ResNet, self).__init__()
         self.in_planes = 8
@@ -157,6 +165,10 @@ class P4MBasicBlock(nn.Module):
 
 
 class P4MResNet(nn.Module):
+    
+    def __str__(self):
+        return "P4MResNet"
+
     def __init__(self, block, num_blocks, num_classes=10):
         super(P4MResNet, self).__init__()
         self.in_planes = 6

@@ -76,7 +76,7 @@ def step(model, loss_func, input, target, opt=None):
 #training of the model
 def fit(epochs, model, loss_func, opt, train_dl, valid_dl, classes, max_patience):
     path = "test_results/ResNet-CIFAR10/checkpoint-"+str(model)
-    best_accuracy = 0.
+    best_val_loss = 100.
     patience = max_patience
 
     for epoch in range(epochs):
@@ -87,17 +87,17 @@ def fit(epochs, model, loss_func, opt, train_dl, valid_dl, classes, max_patience
             
         print("Train loss: ",loss)
         
-        val_accuracy = 0
+        val_loss = 0
         model.eval()
         with torch.no_grad():
             for input, targets in valid_dl:
-                val_accuracy = loss_func(model(input), targets).item()
+                val_loss = loss_func(model(input), targets).item()
 
-        print("Validation loss: ", val_accuracy)
+        print("Validation loss: ", val_loss)
 
         
-        if (val_accuracy > best_accuracy):
-            best_accuracy = val_accuracy
+        if (val_loss < best_val_loss):
+            best_val_loss = val_loss
             torch.save({
             'epoch': epoch,
             'model_state_dict': model.state_dict(),
@@ -114,7 +114,7 @@ def fit(epochs, model, loss_func, opt, train_dl, valid_dl, classes, max_patience
                 print("Stopping training and taking the model that performed best in the validation set")
                 return None
 
-    #pick the model with the best val_accuracy
+    #pick the model with the best val_loss
     checkpoint = torch.load(path)
     model.load_state_dict(checkpoint['model_state_dict'])
     opt.load_state_dict(checkpoint['optimizer_state_dict'])
