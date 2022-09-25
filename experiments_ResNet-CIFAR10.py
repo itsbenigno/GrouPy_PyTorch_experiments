@@ -22,7 +22,7 @@ random.seed(0)
 
 
 def train_data_mean_std():
-    dataset = datasets.CIFAR10(root='./data', train=True, download=True)
+    dataset = datasets.CIFAR10(root='../data', train=True, download=True)
     data = dataset.data / 255
     mean = data.mean(axis = (0,1,2)) 
     std = data.std(axis = (0,1,2))
@@ -42,7 +42,7 @@ def get_datasets(train_bs, val_bs, test_bs):
         ]
     )
 
-    train_dataset = datasets.CIFAR10(root='./data', train=True, transform=image_transforms, download=True)
+    train_dataset = datasets.CIFAR10(root='../data', train=True, transform=image_transforms, download=True)
 
     train_set, val_set = torch.utils.data.random_split(train_dataset, [40000, 10000])
 
@@ -125,8 +125,8 @@ def fit(epochs, model, loss_func, opt, train_dl, valid_dl, classes, max_patience
 def test(model, test_dl, classes):
     correct = 0
     total = 0
-    correct_pred = {pred_class: 0 for pred_class in classes} #class: 0 for class in classes
-    total_pred = {number: 0 for number in range(10)}
+    correct_pred = {pred_class: 0 for pred_class in classes}
+    total_pred = {pred_class: 0 for pred_class in classes}
     model.eval()
     with torch.no_grad():
         for input, targets in test_dl:
@@ -178,7 +178,7 @@ def testing():
 
         loss_func = F.nll_loss
         model, opt = get_model(model_to_test, lr, momentum)
-        fit(epochs, model, loss_func, opt, train_loader, train_loader, classes, max_patience)
+        fit(epochs, model, loss_func, opt, train_loader, val_loader, classes, max_patience)
         correct_pred, total_pred, class_correct_pred, object_per_class = test(model, test_loader, classes)
 
         results = {}
