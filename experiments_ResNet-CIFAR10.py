@@ -1,6 +1,4 @@
 #importing dependencies
-import numpy as np
-
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
@@ -17,7 +15,6 @@ import Models.ResNet as Models
 #reproducibility
 import random
 torch.manual_seed(42)
-np.random.seed(42)
 random.seed(0)
 
 
@@ -84,7 +81,6 @@ def fit(epochs, model, loss_func, opt, train_dl, valid_dl, classes, max_patience
         model.train()
         for input, target in train_dl:
             loss = step(model, loss_func, input, target, opt)
-            print("Train loss: ",loss)
 
         print("Train loss: ",loss)
         

@@ -1,6 +1,4 @@
 #importing dependencies
-import numpy as np
-
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
@@ -17,7 +15,6 @@ import Models.LeNet as Models
 #reproducibility
 import random
 torch.manual_seed(42)
-np.random.seed(42)
 random.seed(0)
 
 
