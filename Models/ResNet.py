@@ -64,7 +64,7 @@ class ResNet(nn.Module):
         out = F.avg_pool2d(out, out.size()[3])
         out = out.view(out.size(0), -1)
         out = self.linear(out)
-        return out#F.log_softmax(out, dim=1)
+        return F.log_softmax(out, dim=1)
 
 def ResNet44():
     return ResNet(BasicBlock, [7, 7, 7])

@@ -157,7 +157,7 @@ def testing():
     train_batch_size = 128  
     val_batch_size = 10000
     test_batch_size = 1000 
-    epochs = 50  # int
+    epochs = 25  # int
     lr = 0.05  # float
     momentum = 0.9  # float
     classes = ['plane', 'car', 'bird', 'cat','deer', 'dog', 'frog', 'horse', 'ship', 'truck']
@@ -172,6 +172,7 @@ def testing():
         temp_model_instance = model_to_test()
 
         model_params = utility.count_parameters(temp_model_instance)
+        
         model_name = str(temp_model_instance)
         print(model_name)
         del temp_model_instance

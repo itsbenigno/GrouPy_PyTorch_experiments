@@ -151,12 +151,3 @@ class P4MAllCNNC(nn.Module):
 
 
         return F.log_softmax(x, dim=1)
-
-
-model1 = AllCNNC()
-model2 = P4AllCNNC()
-model3 = P4AllCNNC()
-input = torch.rand(10,3,32,32)
-print("Model 1 shape\n",model1(input).shape)
-print("Model 2 shape\n",model2(input).shape)
-print("Model 3 shape\n",model3(input).shape)

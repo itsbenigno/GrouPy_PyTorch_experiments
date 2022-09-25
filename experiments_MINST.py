@@ -12,7 +12,7 @@ import os
 
 import utility
 import utility as counting
-import Models.ResNet as Models
+import Models.LeNet as Models
 
 #reproducibility
 import random
@@ -22,12 +22,11 @@ random.seed(0)
 
 
 def train_data_mean_std():
-    dataset = datasets.CIFAR10(root='./data', train=True, download=True)
+    dataset = datasets.MNIST(root='./data', train=True, download=True)
     data = dataset.data / 255
-    mean = data.mean(axis = (0,1,2)) 
-    std = data.std(axis = (0,1,2))
+    mean = data.mean() 
+    std = data.std()
     return mean, std
-
 
 #retrieve the datasets
 def get_datasets(train_bs, val_bs, test_bs):
@@ -42,19 +41,19 @@ def get_datasets(train_bs, val_bs, test_bs):
         ]
     )
 
-    train_dataset = datasets.CIFAR10(root='./data', train=True, transform=image_transforms, download=True)
+    train_dataset = datasets.MNIST(root='./data', train=True, transform=image_transforms, download=True)
+    train_set, val_set = torch.utils.data.random_split(train_dataset, [50000, 10000])
 
-    train_set, val_set = torch.utils.data.random_split(train_dataset, [40000, 10000])
+    test_dataset = datasets.MNIST(root='./data', train=False, transform=image_transforms, download=True)
 
-    test_dataset = datasets.CIFAR10(root='./data', train=False, transform=image_transforms, download=True)
-
-    train_loader = torch.utils.data.DataLoader(train_set, shuffle=True, batch_size=train_bs)
-    validation_loader = torch.utils.data.DataLoader(val_set, shuffle=False, batch_size=val_bs)
-    test_loader = torch.utils.data.DataLoader(test_dataset, shuffle=False, batch_size=test_bs)
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=train_bs)
+    validation_loader = torch.utils.data.DataLoader(val_set, batch_size=val_bs)
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=test_bs)
 
     return train_loader, validation_loader, test_loader
 
 
+#retrieving the model and initializing the optimizer
 def get_model(model, lr, momentum=None):
   actual_model = model()
   return actual_model, optim.SGD(actual_model.parameters(), lr=lr, momentum=momentum)
@@ -72,10 +71,9 @@ def step(model, loss_func, input, target, opt=None):
   return loss.item()
 
 
-
 #training of the model
 def fit(epochs, model, loss_func, opt, train_dl, valid_dl, classes, max_patience):
-    path = "test_results/ResNet-CIFAR10/checkpoint-"+str(model)
+    path = "test_results/MINST/checkpoint-"+str(model)
     best_val_loss = 100.
     patience = max_patience
 
@@ -135,9 +133,8 @@ def test(model, test_dl, classes):
             total += len(input)
         for target, prediction in zip(targets, predictions):
             if target == prediction:
-                class_name = classes[target.item()]
-                correct_pred[class_name] += 1
-            total_pred[class_name] += 1
+                correct_pred[target.item()] += 1
+            total_pred[target.item()] += 1
 
     return correct, total, correct_pred, total_pred
 
@@ -155,15 +152,15 @@ def testing():
     train_batch_size = 128  
     val_batch_size = 10000
     test_batch_size = 1000 
-    epochs = 50  # int
-    lr = 0.05  # float
-    momentum = 0.9  # float
-    classes = ['plane', 'car', 'bird', 'cat','deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+    epochs = 25  
+    lr = 0.05
+    momentum = 0.9 
+    classes = [0,1,2,3,4,5,6,7,8,9]
     max_patience = 15
 
-    create_test_dir("ResNet-CIFAR10")
+    create_test_dir("MINST")
     train_loader, val_loader, test_loader = get_datasets(train_batch_size, val_batch_size, test_batch_size)
-    models = [Models.ResNet44, Models.P4ResNet44, Models.P4MResNet44]
+    models = [Models.LeNet, Models.P4LeNet, Models.P4MLeNet]
 
     for model_to_test in models:
 
@@ -190,9 +187,9 @@ def testing():
         # Serializing json
         json_object = json.dumps(results)
         # save #parameters, accuracy on fixed seed, pytorch model
-        with open("test_results/ResNet-CIFAR10/"+model_name+"-results.json", 'w') as outfile:
+        with open("test_results/MINST/"+model_name+"-results.json", 'w') as outfile:
             outfile.write(json_object)
 
-        torch.save(model.state_dict(), "test_results/ResNet-CIFAR10/"+model_name)
+        torch.save(model.state_dict(), "test_results/MINST/"+model_name)
 
 testing()

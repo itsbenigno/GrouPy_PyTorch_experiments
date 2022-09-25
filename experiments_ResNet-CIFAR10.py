@@ -12,7 +12,7 @@ import os
 
 import utility
 import utility as counting
-import Models.LeNet as Models
+import Models.ResNet as Models
 
 #reproducibility
 import random
@@ -22,11 +22,12 @@ random.seed(0)
 
 
 def train_data_mean_std():
-    dataset = datasets.MNIST(root='./data', train=True, download=True)
+    dataset = datasets.CIFAR10(root='./data', train=True, download=True)
     data = dataset.data / 255
-    mean = data.mean() 
-    std = data.std()
+    mean = data.mean(axis = (0,1,2)) 
+    std = data.std(axis = (0,1,2))
     return mean, std
+
 
 #retrieve the datasets
 def get_datasets(train_bs, val_bs, test_bs):
@@ -41,22 +42,22 @@ def get_datasets(train_bs, val_bs, test_bs):
         ]
     )
 
-    train_dataset = datasets.MNIST(root='./data', train=True, transform=image_transforms, download=True)
-    train_set, val_set = torch.utils.data.random_split(train_dataset, [50000, 10000])
+    train_dataset = datasets.CIFAR10(root='./data', train=True, transform=image_transforms, download=True)
 
-    test_dataset = datasets.MNIST(root='./data', train=False, transform=image_transforms, download=True)
+    train_set, val_set = torch.utils.data.random_split(train_dataset, [40000, 10000])
 
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=train_bs)
-    validation_loader = torch.utils.data.DataLoader(val_set, batch_size=val_bs)
-    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=test_bs)
+    test_dataset = datasets.CIFAR10(root='./data', train=False, transform=image_transforms, download=True)
+
+    train_loader = torch.utils.data.DataLoader(train_set, shuffle=True, batch_size=train_bs)
+    validation_loader = torch.utils.data.DataLoader(val_set, shuffle=False, batch_size=val_bs)
+    test_loader = torch.utils.data.DataLoader(test_dataset, shuffle=False, batch_size=test_bs)
 
     return train_loader, validation_loader, test_loader
 
 
-#retrieving the model and initializing the optimizer
 def get_model(model, lr, momentum=None):
   actual_model = model()
-  return actual_model, optim.Adam(actual_model.parameters(), lr=lr)
+  return actual_model, optim.SGD(actual_model.parameters(), lr=lr, momentum=momentum)
 
 
 #compute loss given loss function, model and input
@@ -71,9 +72,10 @@ def step(model, loss_func, input, target, opt=None):
   return loss.item()
 
 
+
 #training of the model
 def fit(epochs, model, loss_func, opt, train_dl, valid_dl, classes, max_patience):
-    path = "test_results/MINST/checkpoint-"+str(model)
+    path = "test_results/ResNet-CIFAR10/checkpoint-"+str(model)
     best_val_loss = 100.
     patience = max_patience
 
@@ -82,7 +84,8 @@ def fit(epochs, model, loss_func, opt, train_dl, valid_dl, classes, max_patience
         model.train()
         for input, target in train_dl:
             loss = step(model, loss_func, input, target, opt)
-            
+            print("Train loss: ",loss)
+
         print("Train loss: ",loss)
         
         val_loss = 0
@@ -133,8 +136,9 @@ def test(model, test_dl, classes):
             total += len(input)
         for target, prediction in zip(targets, predictions):
             if target == prediction:
-                correct_pred[target.item()] += 1
-            total_pred[target.item()] += 1
+                class_name = classes[target.item()]
+                correct_pred[class_name] += 1
+            total_pred[class_name] += 1
 
     return correct, total, correct_pred, total_pred
 
@@ -152,26 +156,28 @@ def testing():
     train_batch_size = 128  
     val_batch_size = 10000
     test_batch_size = 1000 
-    epochs = 50  
-    lr = 0.001 
-    classes = [0,1,2,3,4,5,6,7,8,9]
+    epochs = 25  # int
+    lr = 0.05  # float
+    momentum = 0.9  # float
+    classes = ['plane', 'car', 'bird', 'cat','deer', 'dog', 'frog', 'horse', 'ship', 'truck']
     max_patience = 15
 
-    create_test_dir("MINST")
+    create_test_dir("ResNet-CIFAR10")
     train_loader, val_loader, test_loader = get_datasets(train_batch_size, val_batch_size, test_batch_size)
-    models = [Models.LeNet, Models.P4LeNet, Models.P4MLeNet]
+    models = [Models.ResNet44, Models.P4ResNet44, Models.P4MResNet44]
 
     for model_to_test in models:
 
         temp_model_instance = model_to_test()
 
         model_params = utility.count_parameters(temp_model_instance)
+
         model_name = str(temp_model_instance)
         print(model_name)
         del temp_model_instance
 
         loss_func = F.nll_loss
-        model, opt = get_model(model_to_test, lr)
+        model, opt = get_model(model_to_test, lr, momentum)
         fit(epochs, model, loss_func, opt, train_loader, train_loader, classes, max_patience)
         correct_pred, total_pred, class_correct_pred, object_per_class = test(model, test_loader, classes)
 
@@ -186,9 +192,9 @@ def testing():
         # Serializing json
         json_object = json.dumps(results)
         # save #parameters, accuracy on fixed seed, pytorch model
-        with open("test_results/MINST/"+model_name+"-results.json", 'w') as outfile:
+        with open("test_results/ResNet-CIFAR10/"+model_name+"-results.json", 'w') as outfile:
             outfile.write(json_object)
 
-        torch.save(model.state_dict(), "test_results/MINST/"+model_name)
+        torch.save(model.state_dict(), "test_results/ResNet-CIFAR10/"+model_name)
 
 testing()
