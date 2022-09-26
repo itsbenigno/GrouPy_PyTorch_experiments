@@ -8,7 +8,6 @@ from torchvision import datasets, transforms
 import json
 import os
 
-import utility
 import utility as counting
 import Models.ResNet as Models
 
@@ -43,7 +42,7 @@ def get_datasets(train_bs, val_bs, test_bs):
 
     train_set, val_set = torch.utils.data.random_split(train_dataset, [40000, 10000])
 
-    test_dataset = datasets.CIFAR10(root='./data', train=False, transform=image_transforms, download=True)
+    test_dataset = datasets.CIFAR10(root='../data', train=False, transform=image_transforms, download=True)
 
     train_loader = torch.utils.data.DataLoader(train_set, shuffle=True, batch_size=train_bs)
     validation_loader = torch.utils.data.DataLoader(val_set, shuffle=False, batch_size=val_bs)
@@ -81,7 +80,8 @@ def fit(epochs, model, loss_func, opt, train_dl, valid_dl, classes, max_patience
         model.train()
         for input, target in train_dl:
             loss = step(model, loss_func, input, target, opt)
-
+            print("Train loss: ",loss)
+            
         print("Train loss: ",loss)
         
         val_loss = 0
@@ -130,11 +130,11 @@ def test(model, test_dl, classes):
             predictions = torch.max(output, dim=1)[1]
             correct += (predictions == targets).sum().item()
             total += len(input)
-        for target, prediction in zip(targets, predictions):
-            if target == prediction:
+            for target, prediction in zip(targets, predictions):
                 class_name = classes[target.item()]
-                correct_pred[class_name] += 1
-            total_pred[class_name] += 1
+                if target == prediction:
+                    correct_pred[class_name] += 1
+                total_pred[class_name] += 1
 
     return correct, total, correct_pred, total_pred
 
@@ -156,7 +156,7 @@ def testing():
     lr = 0.05  # float
     momentum = 0.9  # float
     classes = ['plane', 'car', 'bird', 'cat','deer', 'dog', 'frog', 'horse', 'ship', 'truck']
-    max_patience = 15
+    max_patience = 5
 
     create_test_dir("ResNet-CIFAR10")
     train_loader, val_loader, test_loader = get_datasets(train_batch_size, val_batch_size, test_batch_size)
@@ -166,7 +166,7 @@ def testing():
 
         temp_model_instance = model_to_test()
 
-        model_params = utility.count_parameters(temp_model_instance)
+        model_params = counting.count_parameters(temp_model_instance)
 
         model_name = str(temp_model_instance)
         print(model_name)
