@@ -1,0 +1,1 @@
+{"accuracy_pct": 79.66, "correct_pred": 7966, "total_pred": 10000, "parameters": 1372254, "class_correct_pred": {"plane": 95, "car": 78, "bird": 77, "cat": 53, "deer": 79, "dog": 73, "frog": 71, "horse": 82, "ship": 98, "truck": 93}, "object_per_class": {"plane": 120, "car": 101, "bird": 96, "cat": 64, "deer": 100, "dog": 93, "frog": 89, "horse": 96, "ship": 115, "truck": 126}}
